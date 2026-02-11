@@ -49,18 +49,19 @@
  */
 typedef struct
 {
-    uint32_t appearance;      /**< Appearance. */
-    uint32_t minInterval;     /**< Minimum connection interval. Set this to 0, to use BLE stack specific default values. */
-    uint32_t maxInterval;     /**< Maximum connection interval. Set this to 0, to use BLE stack specific default values. */
-    char * pManufacturerData; /**< Manufacturer data */
-    char * pServiceData;      /**< Service data */
-    BTUuid_t * pUUID1;        /**< First UUID to advertise. */
-    BTUuid_t * pUUID2;        /**< Second UUID to advertise. */
-    uint16_t manufacturerLen; /**< Length of manufacturer data. */
-    uint16_t serviceDataLen;  /**< Service data length */
-    bool includeTxPower;      /**< Include Tx Power in advertisement message. */
-    BTGattAdvName_t name;     /**< Specify wether to include short, complete or no name in advertisement message. */
-    bool setScanRsp;          /**< Set to true if the user wishes to set up a scan response instead of an advertisement message. */
+    uint32_t appearance;                    /**< Appearance. */
+    uint32_t minInterval;                   /**< Minimum connection interval. Set this to 0, to use BLE stack specific default values. */
+    uint32_t maxInterval;                   /**< Maximum connection interval. Set this to 0, to use BLE stack specific default values. */
+    char * pManufacturerData;               /**< Manufacturer data */
+    char * pServiceData;                    /**< Service data */
+    BTUuid_t * pUUID1;                      /**< First UUID to advertise. */
+    BTUuid_t * pUUID2;                      /**< Second UUID to advertise. */
+    uint16_t manufacturerLen;               /**< Length of manufacturer data. */
+    uint16_t serviceDataLen;                /**< Service data length */
+    bool includeTxPower;                    /**< Include Tx Power in advertisement message. */
+    BTGattAdvName_t name;                   /**< Specify wether to include short, complete or no name in advertisement message. */
+    bool setScanRsp;                        /**< Set to true if the user wishes to set up a scan response instead of an advertisement message. */
+    uint8_t advertisingEventProperties;     /**< Set the desired advertising mode*/
 } IotBleAdvertisementParams_t;
 
 /**

@@ -88,16 +88,17 @@ static IotBleAdvertisementParams_t _scanRespParams =
         BTGattAdvNameNone,
         0
     },
-    .setScanRsp        = true,
-    .appearance        = IOT_BLE_ADVERTISING_APPEARANCE,
-    .minInterval       = IOT_BLE_ADVERTISING_CONN_INTERVAL_MIN,
-    .maxInterval       = IOT_BLE_ADVERTISING_CONN_INTERVAL_MAX,
-    .serviceDataLen    = 0,
-    .pServiceData      = NULL,
-    .manufacturerLen   = 0,
-    .pManufacturerData = NULL,
-    .pUUID1            = NULL,
-    .pUUID2            = NULL
+    .setScanRsp                 = true,
+    .appearance                 = IOT_BLE_ADVERTISING_APPEARANCE,
+    .minInterval                = IOT_BLE_ADVERTISING_CONN_INTERVAL_MIN,
+    .maxInterval                = IOT_BLE_ADVERTISING_CONN_INTERVAL_MAX,
+    .serviceDataLen             = 0,
+    .pServiceData               = NULL,
+    .manufacturerLen            = 0,
+    .pManufacturerData          = NULL,
+    .pUUID1                     = NULL,
+    .pUUID2                     = NULL,
+    .advertisingEventProperties = BTAdvInd
 };
 
 /**
@@ -110,18 +111,19 @@ static IotBleAdvertisementParams_t _scanRespParams =
 
 static IotBleAdvertisementParams_t _advParams =
 {
-    .includeTxPower    = true,
-    .name              = { BTGattAdvNameShort,          IOT_BLE_DEVICE_SHORT_LOCAL_NAME_SIZE},
-    .setScanRsp        = false,
-    .appearance        = IOT_BLE_ADVERTISING_APPEARANCE,
-    .minInterval       = 0,
-    .maxInterval       = 0,
-    .serviceDataLen    = 0,
-    .pServiceData      = NULL,
-    .manufacturerLen   = 0,
-    .pManufacturerData = NULL,
-    .pUUID1            = ( BTUuid_t * ) &_advUUID,
-    .pUUID2            = NULL
+    .includeTxPower             = true,
+    .name                       = { BTGattAdvNameShort,          IOT_BLE_DEVICE_SHORT_LOCAL_NAME_SIZE},
+    .setScanRsp                 = false,
+    .appearance                 = IOT_BLE_ADVERTISING_APPEARANCE,
+    .minInterval                = 0,
+    .maxInterval                = 0,
+    .serviceDataLen             = 0,
+    .pServiceData               = NULL,
+    .manufacturerLen            = 0,
+    .pManufacturerData          = NULL,
+    .pUUID1                     = ( BTUuid_t * ) &_advUUID,
+    .pUUID2                     = NULL,
+    .advertisingEventProperties = BTAdvInd
 };
 
 
@@ -416,7 +418,7 @@ BTStatus_t _setAdvData( IotBleAdvertisementParams_t * pAdvParams )
 
     pParams.usMinAdvInterval = IOT_BLE_ADVERTISING_INTERVAL;
     pParams.usMaxAdvInterval = ( IOT_BLE_ADVERTISING_INTERVAL * 2 );
-    pParams.usAdvertisingEventProperties = BTAdvInd;
+    pParams.usAdvertisingEventProperties = pAdvParams->advertisingEventProperties; 
 
     pParams.xAddrType = BTAddrTypePublic;
     pParams.ucChannelMap = 0;
@@ -440,8 +442,8 @@ BTStatus_t _setAdvData( IotBleAdvertisementParams_t * pAdvParams )
                                                                &pParams,
                                                                pAdvParams->manufacturerLen,
                                                                pAdvParams->pManufacturerData,
-                                                               0,
-                                                               NULL,
+                                                               pAdvParams->serviceDataLen,
+                                                               pAdvParams->pServiceData,
                                                                pServiceUuide,
                                                                countService );
 
@@ -939,8 +941,26 @@ BTStatus_t IotBle_SetDeviceName( const char * pName,
              * name change immediately in the advertisement.
              */
 
-            status = _setDeviceProperty( eBTpropertyBdname, bleDeviceName, strlen( bleDeviceName ) );
+            /* Stop the advertisement to avoid new connections to the device since we may want to change
+             * the advertising mode.
+             *  */
+            status = IotBle_StopAdv( &_bleStopAdvCb );
 
+            if( status == eBTStatusSuccess )
+            {
+                IotSemaphore_Wait( &_BTInterface.callbackSemaphore );
+                status = _BTInterface.cbStatus;
+            }
+
+            if( status == eBTStatusSuccess )
+            {
+                status = _setDeviceProperty( eBTpropertyBdname, bleDeviceName, strlen( bleDeviceName ) );
+            }
+
+            #if ( IOT_BLE_SET_CUSTOM_ADVERTISEMENT_MSG == 1 )
+                IotBle_SetCustomAdvCb( &_advParams, &_scanRespParams );
+            #endif
+            
             if( status == eBTStatusSuccess )
             {
                 status = _setAdvData( &_advParams );
@@ -949,6 +969,18 @@ BTStatus_t IotBle_SetDeviceName( const char * pName,
             if( status == eBTStatusSuccess )
             {
                 status = _setAdvData( &_scanRespParams );
+            }
+
+            /* Start advertisement. */
+            if( status == eBTStatusSuccess )
+            {
+                status = IotBle_StartAdv( &_bleStartAdvCb );
+
+                if( status == eBTStatusSuccess )
+                {
+                    IotSemaphore_Wait( &_BTInterface.callbackSemaphore );
+                    status = _BTInterface.cbStatus;
+                }
             }
         }
     }
